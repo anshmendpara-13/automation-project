@@ -80,7 +80,7 @@ label {
 
 input, select {
     width: 100%;
-    padding: 12px;
+    padding: 12px 0px;
     margin: 8px 0 15px 0;
     border-radius: 8px;
     border: 1px solid #333;
@@ -112,7 +112,6 @@ button {
     transition: 0.3s;
 }
 
-/* Loading state */
 button.loading {
     background: #999;
     cursor: not-allowed;
@@ -123,7 +122,14 @@ button:hover {
     transform: scale(1.03);
 }
 
-/* Responsive */
+/* White small text */
+.small-link {
+    color: #ffffff;
+    text-align: center;
+    margin-top: 15px;
+    font-size: 13px;
+}
+
 @media(max-width: 500px){
     .card {
         padding: 20px;
@@ -139,12 +145,10 @@ button:hover {
     <!-- 🔥 TOP BAR -->
     <div class="top-bar">
         <div class="user">👤 {{ user }}</div>
-        <a href="/logout">
-            <button class="logout-btn">Logout</button>
-        </a>
+        <a href="/logout"><button class="logout-btn">Logout</button></a>
     </div>
 
-    <h2>Generate Report</h2>
+    <h2><b>Generate Report</b></h2>
 
     <!-- 🔥 FLASH MESSAGES -->
     {% with messages = get_flashed_messages() %}
@@ -155,7 +159,7 @@ button:hover {
       {% endif %}
     {% endwith %}
 
-    <form method="POST" enctype="multipart/form-data" onsubmit="handleSubmit(this)">
+    <form method="POST" enctype="multipart/form-data">
 
         <label>Select Account:</label>
         <select name="account_select">
@@ -171,21 +175,37 @@ button:hover {
         <label>Manifest PDF:</label>
         <input type="file" name="manifest" required>
 
-        <label>Training Excel: (if you have new SKU update file)</label>
+        <label>Training Excel: (Optional)</label>
         <input type="file" name="train">
 
-        <button type="submit" id="submitBtn">Generate Report</button>
+        <button id="processBtn" type="submit">Generate PDF</button>
 
     </form>
+
+    <div class="small-link">Already have an account?</div>
 
 </div>
 
 <script>
-function handleSubmit(form) {
-    const btn = document.getElementById("submitBtn");
-    btn.classList.add("loading");
+    document.querySelector("form").addEventListener("submit", function (e) {
+    const btn = document.getElementById("processBtn");
     btn.innerText = "Processing...";
-}
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+
+    // ⏳ Auto-restore button + reload page after download starts
+    setTimeout(() => {
+        btn.innerText = "Done ✓";
+        btn.disabled = false;
+        btn.style.opacity = "1";
+
+        // 🔄 Reload page after a small delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 1200);
+
+    }, 2000);  // delay 2 seconds while PDF download starts
+});
 </script>
 
 </body>

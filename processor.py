@@ -82,21 +82,39 @@ def match_and_group(mapping, manifest_data):
 
     return result
 
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
 
 def generate_pdf(result, output_file):
     doc = SimpleDocTemplate(output_file)
     styles = getSampleStyleSheet()
 
+    # MAIN TITLE → Bold + Big
     left_title = ParagraphStyle(
         name="LeftTitle",
         parent=styles["Title"],
-        alignment=TA_LEFT
+        alignment=TA_LEFT,
+        fontSize=18,
+        leading=24,
+        fontName="Helvetica-Bold"   # Bold font
     )
 
+    # SUB TEXT → Normal (not bold) + Big
     left_normal = ParagraphStyle(
         name="LeftNormal",
         parent=styles["Normal"],
-        alignment=TA_LEFT
+        alignment=TA_LEFT,
+        fontSize=15,
+        leading=22,
+        fontName="Helvetica"        # Normal font
     )
 
     elements = []
@@ -104,25 +122,32 @@ def generate_pdf(result, output_file):
 
     for main, subs in result.items():
 
+        # MAIN TITLE (Bold)
         if len(subs) == 1 and list(subs.keys())[0] == main:
             qty = list(subs.values())[0]
             elements.append(Paragraph(f"<b>{main} → {qty}</b>", left_title))
             total_qty += qty
-
         else:
             elements.append(Paragraph(f"<b>{main}</b>", left_title))
 
+            # SUB TEXT (Non-bold)
             for sub, qty in subs.items():
                 clean_sub = sub.replace(main, "").strip()
                 if clean_sub == "":
                     clean_sub = sub
 
-                elements.append(Paragraph(f"   {clean_sub} → {qty}", left_normal))
+                elements.append(Paragraph(
+                    f"&nbsp;&nbsp;&nbsp;{clean_sub} → {qty}",
+                    left_normal
+                ))
                 total_qty += qty
 
-        elements.append(Spacer(1, 10))
+        elements.append(Spacer(1, 22))  # Extra section spacing
 
-    elements.append(Paragraph("<b>--------------------------</b>", left_normal))
-    elements.append(Paragraph(f"Total Quantity: {total_qty}", left_normal))
+    # Footer
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("------------------------------", left_normal))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph(f"<b>Total Quantity: {total_qty}</b>", left_title))
 
     doc.build(elements)

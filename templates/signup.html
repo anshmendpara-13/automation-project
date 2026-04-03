@@ -4,6 +4,7 @@
 <title>Sign Up - Lavanya Tool</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+
 <style>
 :root {
     --bg: #0f0f0f;
@@ -24,34 +25,37 @@ body {
     padding: 20px;
 }
 
-/* Card */
+/* -------------------------
+   BIGGER SIGN UP BOX
+----------------------------*/
 .card {
     background: var(--card);
-    padding: 40px 35px;
-    border-radius: 18px;
+    padding: 55px 45px;
+    border-radius: 22px;
     width: 100%;
-    max-width: 420px; /* Larger on mobile */
-    box-shadow: 0 0 25px rgba(255,204,0,0.15);
+    max-width: 520px;
+    min-height: 520px;
+    box-shadow: 0 0 35px rgba(255,204,0,0.18);
     text-align: center;
 }
 
 /* Title */
 h2 {
     color: var(--yellow);
-    font-size: 28px;
-    margin-bottom: 30px;
+    font-size: 32px;
+    margin-bottom: 40px;
 }
 
 /* Inputs */
 input {
     width: 100%;
-    padding: 14px 10px;
-    margin-bottom: 20px;
+    padding: 18px 0px;
+    margin-bottom: 22px;
     border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--input);
     color: white;
-    font-size: 16px;  /* Bigger text */
+    font-size: 18px;
 }
 
 input:focus {
@@ -62,13 +66,13 @@ input:focus {
 /* Button */
 button {
     width: 100%;
-    padding: 15px;
+    padding: 18px;
     border-radius: 10px;
     border: none;
     background: var(--yellow);
     color: black;
     font-weight: 600;
-    font-size: 17px;
+    font-size: 18px;
     cursor: pointer;
     transition: 0.3s;
 }
@@ -79,33 +83,34 @@ button:hover {
 
 /* Link */
 .link {
-    margin-top: 25px;
-    font-size: 15px;
+    margin-top: 28px;
+    font-size: 16px;
+    color: white;
 }
 
 .link a {
     color: var(--yellow);
     text-decoration: none;
+
 }
 
-/* Flash */
+/* Flash message */
 .flash {
     background: #2a2a2a;
     color: var(--yellow);
-    padding: 12px;
+    padding: 14px;
     border-radius: 8px;
     margin-bottom: 20px;
-    font-size: 14px;
+    font-size: 17px;
 }
 
-/* -------------------------
-   📱 MOBILE RESPONSIVE FIXES
-   ------------------------- */
+/* Responsive */
 @media (max-width: 480px) {
 
     .card {
-        padding: 45px 25px;
+        padding: 45px 30px;
         border-radius: 20px;
+        min-height: 480px;
     }
 
     h2 {
@@ -122,48 +127,17 @@ button:hover {
         font-size: 18px;
     }
 
-    .link {
+    .flash {
         font-size: 16px;
     }
-}
-/* ----- MOBILE 1.5X SCALING ----- */
-@media (max-width: 600px) {
-
-    body {
-        padding: 0;
-    }
-
-    .card {
-        transform: scale(1.5);
-        transform-origin: top center;
-        margin-top: 80px;  /* adjust so card is not cut */
-    }
-
-    h2 {
-        font-size: 30px;
-        margin-bottom: 35px;
-    }
-
-    input {
-        padding: 18px 14px;
-        font-size: 18px;
-    }
-
-    button {
-        padding: 20px;
-        font-size: 19px;
-    }
-
-    .flash {
-        font-size: 17px;
-        padding: 14px;
-    }
 
     .link {
-        font-size: 17px;
-        margin-top: 30px;
+        font-size: 16px;
+        color: white;
     }
 }
+
+/* Removed old 1.5x scaling block */
 </style>
 </head>
 

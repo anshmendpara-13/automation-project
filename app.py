@@ -120,7 +120,8 @@ def index():
 
         return send_file(output_pdf, as_attachment=True)
 
-    return render_template("index.html", accounts=accounts, user=username)
+    # ➕ NEW: Tell frontend to reset the button after refresh
+    return render_template("index.html", accounts=accounts, user=username, reset_button=True)
 
 
 # -------------------------
