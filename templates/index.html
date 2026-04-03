@@ -159,7 +159,7 @@ button:hover {
       {% endif %}
     {% endwith %}
 
-    <form method="POST" enctype="multipart/form-data">
+    <form id="pdfForm" enctype="multipart/form-data">
 
         <label>Select Account:</label>
         <select name="account_select">
@@ -187,24 +187,47 @@ button:hover {
 </div>
 
 <script>
-    document.querySelector("form").addEventListener("submit", function (e) {
+document.getElementById("pdfForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+
     const btn = document.getElementById("processBtn");
     btn.innerText = "Processing...";
     btn.disabled = true;
-    btn.style.opacity = "0.6";
+    btn.classList.add("loading");
 
-    // ⏳ Auto-restore button + reload page after download starts
-    setTimeout(() => {
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch("/", {
+            method: "POST",
+            body: formData
+        });
+
+        if(!response.ok) throw new Error("PDF generation failed");
+
+        const blob = await response.blob();
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+
+        // PDF filename same as Flask generates
+        link.download = "manifest.pdf";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // ✅ Update button and reload page
         btn.innerText = "Done ✓";
         btn.disabled = false;
-        btn.style.opacity = "1";
+        btn.classList.remove("loading");
 
-        // 🔄 Reload page after a small delay
-        setTimeout(() => {
-            window.location.reload();
-        }, 1200);
+        setTimeout(()=> window.location.reload(), 1000);
 
-    }, 2000);  // delay 2 seconds while PDF download starts
+    } catch(err) {
+        alert(err);
+        btn.innerText = "Generate PDF";
+        btn.disabled = false;
+        btn.classList.remove("loading");
+    }
 });
 </script>
 
