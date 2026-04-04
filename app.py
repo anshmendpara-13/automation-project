@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, send_file, session, redirect
 import os
+import re
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 from auth import auth
 from processor import (
@@ -19,12 +21,19 @@ app.secret_key = "supersecretkey123"
 app.register_blueprint(auth)
 
 UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "outputs"
 ACCOUNTS_FOLDER = "accounts"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(ACCOUNTS_FOLDER, exist_ok=True)
+
+
+# -------------------------
+# 🔥 CLEAN NAME (SAFE)
+# -------------------------
+def clean_name(name):
+    name = str(name).strip().lower()
+    name = re.sub(r'[^a-z0-9]', '_', name)
+    return name
 
 
 # -------------------------
@@ -62,40 +71,47 @@ def index():
 
     if request.method == "POST":
 
+        # =========================
         # ✅ ACCOUNT HANDLING
+        # =========================
         selected_account = request.form.get("account_select") or ""
         new_account = request.form.get("new_account") or ""
 
         if new_account.strip():
-            account_name = new_account.strip().lower()
+            account_name = clean_name(new_account)
         elif selected_account.strip():
-            account_name = selected_account.strip().lower()
+            account_name = clean_name(selected_account)
         else:
             return "❌ Please select or create account"
 
+        # =========================
         # 📂 FILES
+        # =========================
         manifest_file = request.files.get("manifest")
         train_file = request.files.get("train")
 
         if not manifest_file or manifest_file.filename == "":
             return "❌ Please upload manifest file"
 
-        # 📁 ACCOUNT FOLDER (USER-WISE)
+        # 📁 ACCOUNT FOLDER
         account_path = os.path.join(user_path, account_name)
         os.makedirs(account_path, exist_ok=True)
 
-        # 📄 SAVE MANIFEST
-        manifest_path = os.path.join(UPLOAD_FOLDER, manifest_file.filename)
+        # =========================
+        # 📄 SAVE MANIFEST (SAFE NAME)
+        # =========================
+        safe_manifest_name = secure_filename(manifest_file.filename)
+        manifest_path = os.path.join(UPLOAD_FOLDER, safe_manifest_name)
         manifest_file.save(manifest_path)
 
-        # 📊 TRAIN FILE PATH
+        # =========================
+        # 📊 TRAIN FILE
+        # =========================
         train_path = os.path.join(account_path, "train.xlsx")
 
-        # 👉 SAVE TRAIN IF UPLOADED
         if train_file and train_file.filename != "":
             train_file.save(train_path)
 
-        # ❌ TRAIN NOT FOUND
         if not os.path.exists(train_path):
             return "❌ No training file found for this account. Please upload one."
 
@@ -103,25 +119,44 @@ def index():
         # ⚙️ PROCESS
         # =========================
         mapping = train_from_excel(train_path)
-
         manifest_data = extract_from_pdf(manifest_path)
         result = match_and_group(mapping, manifest_data)
 
         # =========================
+        # 📄 GENERATE PDF NAME
+        # =========================
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        base_filename = f"{account_name}_{today}.pdf"
+        output_pdf = os.path.join(account_path, base_filename)
+
+        # 🔥 Avoid overwrite
+        if os.path.exists(output_pdf):
+            time_str = datetime.now().strftime("%H%M%S")
+            base_filename = f"{account_name}_{today}_{time_str}.pdf"
+            output_pdf = os.path.join(account_path, base_filename)
+
+        # =========================
         # 📄 GENERATE PDF
         # =========================
-        today = datetime.now().strftime("%d-%m-%Y")
-        output_pdf = os.path.join(
-            OUTPUT_FOLDER,
-            f"{today} - {username} - {account_name}.pdf"
-        )
-
         generate_pdf(result, output_pdf)
 
-        return send_file(output_pdf, as_attachment=True)
+        # =========================
+        # 🧪 DEBUG (optional)
+        # =========================
+        if not os.path.exists(output_pdf):
+            return "❌ PDF not generated. Check generate_pdf function."
 
-    # ➕ NEW: Tell frontend to reset the button after refresh
-    return render_template("index.html", accounts=accounts, user=username, reset_button=True)
+        # =========================
+        # 📤 SEND FILE
+        # =========================
+        return send_file(
+            output_pdf,
+            as_attachment=True,
+            download_name=base_filename
+        )
+
+    return render_template("index.html", accounts=accounts, user=username)
 
 
 # -------------------------

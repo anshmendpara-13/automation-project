@@ -8,12 +8,22 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
 
 
+# -------------------------
+# 🔹 CLEAN TEXT
+# -------------------------
 def clean_text(text):
     text = str(text).lower()
     text = re.sub(r'[^a-z0-9]', '', text)
+
+    # 🔥 remove ending numbers
+    text = re.sub(r'\d+$', '', text)
+
     return text
 
 
+# -------------------------
+# 🔹 TRAIN FROM EXCEL
+# -------------------------
 def train_from_excel(file_path):
     df = pd.read_excel(file_path, header=None)
 
@@ -41,6 +51,9 @@ def train_from_excel(file_path):
     return mapping
 
 
+# -------------------------
+# 🔹 EXTRACT FROM PDF
+# -------------------------
 def extract_from_pdf(pdf_path):
     data = []
 
@@ -53,7 +66,7 @@ def extract_from_pdf(pdf_path):
             lines = text.split("\n")
 
             for line in lines:
-                match = re.search(r'([A-Za-z0-9\- ]+)\s+(\d+)$', line.strip())
+                match = re.search(r'([A-Za-z0-9.\- ]+)\s+(\d+)$', line.strip())
                 if match:
                     sku = match.group(1).strip()
                     qty = int(match.group(2))
@@ -62,15 +75,22 @@ def extract_from_pdf(pdf_path):
     return data
 
 
+# -------------------------
+# 🔹 MATCH & GROUP
+# -------------------------
 def match_and_group(mapping, manifest_data):
     result = defaultdict(lambda: defaultdict(int))
 
     for raw_sku, qty in manifest_data:
         cleaned_sku = clean_text(raw_sku)
 
+        matched = False
+
         for item in mapping:
             for variant in item["variants"]:
-                if variant in cleaned_sku:
+
+                if cleaned_sku.startswith(variant) or variant in cleaned_sku:
+
                     main = item["main"]
                     sub = item["sub"]
 
@@ -78,43 +98,39 @@ def match_and_group(mapping, manifest_data):
                         result[main][main] += qty
                     else:
                         result[main][sub] += qty
+
+                    matched = True
                     break
+
+            if matched:
+                break
 
     return result
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT
-
-def generate_pdf(result, output_file):
-    doc = SimpleDocTemplate(output_file)
+# -------------------------
+# 🔹 GENERATE PDF (FINAL FIX)
+# -------------------------
+def generate_pdf(result, output_path):
+    doc = SimpleDocTemplate(output_path)
     styles = getSampleStyleSheet()
 
-    # MAIN TITLE → Bold + Big
     left_title = ParagraphStyle(
         name="LeftTitle",
         parent=styles["Title"],
         alignment=TA_LEFT,
         fontSize=18,
         leading=24,
-        fontName="Helvetica-Bold"   # Bold font
+        fontName="Helvetica-Bold"
     )
 
-    # SUB TEXT → Normal (not bold) + Big
     left_normal = ParagraphStyle(
         name="LeftNormal",
         parent=styles["Normal"],
         alignment=TA_LEFT,
         fontSize=15,
         leading=22,
-        fontName="Helvetica"        # Normal font
+        fontName="Helvetica"
     )
 
     elements = []
@@ -122,7 +138,6 @@ def generate_pdf(result, output_file):
 
     for main, subs in result.items():
 
-        # MAIN TITLE (Bold)
         if len(subs) == 1 and list(subs.keys())[0] == main:
             qty = list(subs.values())[0]
             elements.append(Paragraph(f"<b>{main} → {qty}</b>", left_title))
@@ -130,7 +145,6 @@ def generate_pdf(result, output_file):
         else:
             elements.append(Paragraph(f"<b>{main}</b>", left_title))
 
-            # SUB TEXT (Non-bold)
             for sub, qty in subs.items():
                 clean_sub = sub.replace(main, "").strip()
                 if clean_sub == "":
@@ -142,7 +156,7 @@ def generate_pdf(result, output_file):
                 ))
                 total_qty += qty
 
-        elements.append(Spacer(1, 22))  # Extra section spacing
+        elements.append(Spacer(1, 22))
 
     # Footer
     elements.append(Spacer(1, 20))
@@ -151,3 +165,20 @@ def generate_pdf(result, output_file):
     elements.append(Paragraph(f"<b>Total Quantity: {total_qty}</b>", left_title))
 
     doc.build(elements)
+
+
+# -------------------------
+# 🔹 MAIN RUN (TEST)
+# -------------------------
+if __name__ == "__main__":
+    excel_file = "mapping.xlsx"
+    pdf_file = "input.pdf"
+    output_file = "output.pdf"
+
+    mapping = train_from_excel(excel_file)
+    manifest_data = extract_from_pdf(pdf_file)
+    result = match_and_group(mapping, manifest_data)
+
+    generate_pdf(result, output_file)
+
+    print("✅ PDF Generated Successfully!")
